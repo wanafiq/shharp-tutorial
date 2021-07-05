@@ -6,24 +6,30 @@ import quotes from "./quotes.json"
 
 const bgFolder = path.resolve(__dirname, "../assets/img/background")
 const quoteFolder = path.resolve(__dirname, "../assets/img/quote")
-const w = 700
-const h = 700
+const maxWidth = 700
+const maxHeigt = 700
+const defaultFontSize = 38
 
 ;(async () => {
     const bg = getRandomBackground()
     const quote = getRandomQuote()
 
-    await createQuote(bg, quote.text, w, h)
+    await createQuote(bg, quote.text, maxWidth, maxHeigt)
 })().catch((err: any) => {
     console.error(err)
 })
 
-async function createQuote(bg: string, quote: string, w: number, h: number) {
-    const svg = getSvg(quote, w, h)
+async function createQuote(
+    bg: string,
+    quote: string,
+    width: number,
+    height: number
+) {
+    const svg = getSvg(quote, width, height)
     const background = path.normalize(`${bgFolder}\\${bg}`)
 
     await sharp(background)
-        .resize(w, h, {
+        .resize(width, height, {
             fit: "contain",
         })
         .composite([
@@ -65,12 +71,7 @@ function getSvg(text: string, width: number, height: number) {
     const h = height.toString()
 
     const fontSize = getFontSize(text)
-    const tx = (width / 2).toString()
-    const ty = (height / 2).toString()
-    const spacing = 3
-    // const quote = wrapText(text, 30)
-
-    const texts = text.split(" ")
+    const words = text.split(" ")
 
     const svg = `
         <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" text-anchor="middle">
@@ -81,7 +82,7 @@ function getSvg(text: string, width: number, height: number) {
                     fill: white;
                 }
                 text {
-                    font-size: 30;
+                    font-size: ${fontSize};
                 }
                 rect {
                     fill: black;
@@ -92,10 +93,7 @@ function getSvg(text: string, width: number, height: number) {
             <rect width="100%" height="100%"></rect>
 
             <text>
-                <tspan x="50%" y="30%" dy="1em">Yesterday is history,</tspan>
-                <tspan x="50%" y="40%" dy="1em">tomorrow is a mystery,</tspan>
-                <tspan x="50%" y="50%" dy="1em">today is a gift of God,</tspan>
-                <tspan x="50%" y="60%" dy="1em">which is why we call it the present.</tspan>
+                ${createSpans(words)}
             </text>
 
         </svg>
@@ -105,7 +103,7 @@ function getSvg(text: string, width: number, height: number) {
 }
 
 function getFontSize(text: string) {
-    let fontSize = 45
+    let fontSize = defaultFontSize
     const resizeHeuristic = 0.9
     const resizeActual = 0.985
     let l = text.length
@@ -115,4 +113,32 @@ function getFontSize(text: string) {
 
         return fontSize.toFixed(1)
     }
+}
+
+function createSpans(words: string[], width?: number) {
+    const w = width ? width : 30
+    const x = 50
+    let y = 40
+    const dy = 1
+
+    let newText = ""
+    let newSentence = ""
+    let delimeter
+    words.forEach((word) => {
+        delimeter = newSentence !== "" ? " " : ""
+
+        newSentence = `${newSentence}${delimeter}${word}`
+        if (newSentence.length > w) {
+            newText += getSpan(x, y, dy, newSentence)
+            newSentence = ""
+            y += 10
+        }
+    })
+    newText += getSpan(x, y, dy, newSentence)
+
+    return newText
+}
+
+function getSpan(x: number, y: number, dy: number, text: string) {
+    return `<tspan x="${x.toString()}%" y="${y.toString()}%" dy="${dy.toString()}em">${text}</tspan>`
 }
