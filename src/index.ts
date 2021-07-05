@@ -4,6 +4,11 @@ import sharp from "sharp"
 
 import quotes from "./quotes.json"
 
+interface TextPosition {
+    text: string
+    position: number
+}
+
 const bgFolder = path.resolve(__dirname, "../assets/img/background")
 const quoteFolder = path.resolve(__dirname, "../assets/img/quote")
 const maxWidth = 700
@@ -71,7 +76,8 @@ function getSvg(text: string, width: number, height: number) {
     const h = height.toString()
 
     const fontSize = getFontSize(text)
-    const words = text.split(" ")
+    const sentences = getSentences(text.split(" "))
+    const textPositioning = getPositioning(sentences)
 
     const svg = `
         <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" text-anchor="middle">
@@ -93,7 +99,12 @@ function getSvg(text: string, width: number, height: number) {
             <rect width="100%" height="100%"></rect>
 
             <text>
-                ${createSpans(words)}
+            ${
+                textPositioning.map(textPosition => {
+                    const {text, position} = textPosition
+                    return `<tspan x="50%" y="${position}%" dy="1em">${text}</tspan>`
+                })
+            }
             </text>
 
         </svg>
@@ -115,30 +126,49 @@ function getFontSize(text: string) {
     }
 }
 
-function createSpans(words: string[], width?: number) {
-    const w = width ? width : 30
-    const x = 50
-    let y = 40
-    const dy = 1
+function getSentences(words: string[], maxWidth?: number): string[] {
+    const sentences: string[] = []
+    const width = maxWidth ? maxWidth : 25
+    let currentSentence = ""
 
-    let newText = ""
-    let newSentence = ""
-    let delimeter
-    words.forEach((word) => {
-        delimeter = newSentence !== "" ? " " : ""
-
-        newSentence = `${newSentence}${delimeter}${word}`
-        if (newSentence.length > w) {
-            newText += getSpan(x, y, dy, newSentence)
-            newSentence = ""
-            y += 10
+    words.forEach(word => {
+        // const firstWordChar = word.trim()[0]
+        if(currentSentence.length > width 
+            || currentSentence.includes(",") 
+            || currentSentence.includes(".")
+            // || sentences.length > 0 && (firstWordChar === firstWordChar.toUpperCase())
+        ) {
+            sentences.push(currentSentence.replace(",", "").replace(".", "").trim())
+            currentSentence = "".concat(word.trim())
+        } else {
+            currentSentence = currentSentence.concat(" ").concat(word.trim())
         }
     })
-    newText += getSpan(x, y, dy, newSentence)
-
-    return newText
+    currentSentence === "" ? false : sentences.push(currentSentence)
+    return sentences
 }
 
-function getSpan(x: number, y: number, dy: number, text: string) {
-    return `<tspan x="${x.toString()}%" y="${y.toString()}%" dy="${dy.toString()}em">${text}</tspan>`
+function getPositioning(texts: string[], lineGap?: number): TextPosition[] {
+    const textPositions: TextPosition[] = []
+    const middleGround = texts.length / 2
+    const middleIndex = Math.ceil(middleGround)
+    const gap = lineGap ? lineGap : 10
+
+    texts.forEach((text, index) => {
+        const distanceFromMiddleIndex = (middleIndex - index) - 1
+        let position = 0
+        if(distanceFromMiddleIndex > 0) {
+            position = 50 - (gap*(distanceFromMiddleIndex))
+        } else if(distanceFromMiddleIndex === 0) {
+            position = 50
+        } else {
+            position = 50 + (gap*-(distanceFromMiddleIndex))
+        }
+        if(Number.isInteger(middleGround)) {
+            position = position - gap / 2
+        }
+        textPositions.push({text, position})
+    })
+
+    return textPositions
 }
