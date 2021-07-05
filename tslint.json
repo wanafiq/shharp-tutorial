@@ -1,0 +1,11 @@
+{
+    "defaultSeverity": "warn",
+    "extends": ["tslint:recomended"],
+    "jsRules": [],
+    "rules": {
+        "no-console": false,
+        "semi": ["error", "never"],
+        "@typescript-eslint/semi": "off"
+    },
+    "rulesDirectory": []
+}
