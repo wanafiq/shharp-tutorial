@@ -12,16 +12,20 @@ const workbook = xlsx.readFile(excelFile)
 const sheet = workbook.Sheets["Quotes Database"]
 const data = xlsx.utils.sheet_to_json(sheet)
 
-let quotes: Quote[]
+processExcel()
 
-quotes = (data as [string: any]).map((d) => {
-    d.processed = false
+export function processExcel() {
+    let quotes: Quote[]
 
-    return d
-})
+    quotes = (data as [string: any]).map((d) => {
+        d.processed = false
 
-if (fs.existsSync(quotesFile)) {
-    fs.unlinkSync(quotesFile)
+        return d
+    })
+
+    if (fs.existsSync(quotesFile)) {
+        fs.unlinkSync(quotesFile)
+    }
+
+    fs.writeFileSync(quotesFile, JSON.stringify(data))
 }
-
-fs.writeFileSync(quotesFile, JSON.stringify(data))

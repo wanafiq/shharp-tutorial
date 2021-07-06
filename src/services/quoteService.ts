@@ -24,9 +24,16 @@ const maxWidth = 700
 const maxHeigt = 700
 const defaultFontSize = 45
 
+let totalGenerated = 0
+
 export async function generateQuotes() {
     for (let i = 0; i < quotes.length; i++) {
         const q = quotes[i]
+
+        if (!q) {
+            continue
+        }
+
         const { quote, category, processed } = q
 
         if (processed) {
@@ -38,11 +45,15 @@ export async function generateQuotes() {
         }
 
         const bg = getRandomBackground(category)
-        const bgPath = path.normalize(`${bgFolder}\\${q.category}\\${bg}`)
-        await createQuote(bgPath, q, maxWidth, maxHeigt, `quote${i}`)
 
-        updateJsonFile(i)
+        if (bg) {
+            const bgPath = path.normalize(`${bgFolder}\\${q.category}\\${bg}`)
+            await createQuote(bgPath, q, maxWidth, maxHeigt, `quote${i}`)
+            updateJsonFile(i)
+        }
     }
+
+    console.log("Total generated: ", totalGenerated)
 }
 
 async function createQuote(
@@ -54,22 +65,32 @@ async function createQuote(
 ) {
     const svg = getSvg(quote, width, height)
 
-    await sharp(bgPath)
-        .resize(width, height, {
-            fit: "contain",
-        })
-        .composite([
-            {
-                input: Buffer.from(svg),
-                gravity: "center",
-            },
-        ])
-        .jpeg()
-        .toFile(path.normalize(`${outputFolder}\\${outputFilename}.jpg`))
+    try {
+        if (!fs.existsSync(bgPath)) {
+            return
+        }
+
+        await sharp(bgPath)
+            .resize(width, height, {
+                fit: "contain",
+            })
+            .composite([
+                {
+                    input: Buffer.from(svg),
+                    gravity: "center",
+                },
+            ])
+            .jpeg()
+            .toFile(path.normalize(`${outputFolder}\\${outputFilename}.jpg`))
+
+        totalGenerated++
+    } catch (err) {
+        return
+    }
 }
 
 function getRandomBackground(category: string) {
-    const categoryFolder = path.resolve(bgFolder, category)
+    const categoryFolder = path.resolve(bgFolder, category.trim())
 
     try {
         const files = fs.readdirSync(categoryFolder, "utf-8")
@@ -82,7 +103,7 @@ function getRandomBackground(category: string) {
 
         return bg
     } catch (err) {
-        throw new Error(`Failed to load files from ${bgFolder}. ${err}`)
+        return undefined
     }
 }
 
