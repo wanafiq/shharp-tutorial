@@ -96,11 +96,12 @@ async function createQuote(
 function getSvg(quote: Quote, width: number, height: number) {
     const w = width.toString()
     const h = height.toString()
-    const x = 20
     const fontSize = 45
     const authorFontSize = 38
 
-    const sentences = getSentences(quote)
+    const x = getXpos(quote.quote.length)
+
+    const sentences = getSentences(quote, 20)
     const textPositioning = getPositioning(sentences)
 
     const svg = `
@@ -200,6 +201,22 @@ function getPositioning(texts: string[], lineGap?: number): TextPosition[] {
     })
 
     return textPositions
+}
+
+function getXpos(textLength: number) {
+    let x
+
+    if (textLength <= 50) {
+        x = 25
+    } else if (textLength >= 100 && textLength <= 120) {
+        x = 18
+    } else if (textLength >= 130 && textLength <= 140) {
+        x = 22
+    } else {
+        x = 20
+    }
+
+    return x
 }
 
 function getFontSize(text: string) {
