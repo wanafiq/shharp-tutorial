@@ -23,17 +23,7 @@ export function get(id: number) {
 }
 
 export async function update(id: number, quote: Quote) {
-    // return knex(tableName).where("id", id).update(quote)
-
-    try {
-        const trx = await knex.transaction()
-        try {
-            knex(tableName).transacting(trx).where("id", id).update(quote)
-            trx.commit()
-        } catch (err) {
-            trx.rollback()
-        }
-    } catch (err) {}
+    return knex(tableName).where("id", id).update(quote)
 }
 
 export function remove(id: number) {

@@ -29,40 +29,32 @@ export async function generateQuotes() {
         fs.mkdirSync(outputDir)
     }
 
-    const promises = quotes.map(async (q) => {
+    for (const q of quotes) {
         const { quote, category, processed } = q
 
         if (processed) {
-            return
+            continue
         }
 
         if (quote.length > maxQuoteLength) {
-            return
+            continue
         }
 
-        const categoryDir = path.join(`${bgDir}`, `${category}`)
+        const categoryDir = path.join(bgDir, category)
         const files = fs.readdirSync(categoryDir)
         if (!files || files.length === 0) {
-            return
+            continue
         }
 
         const randomIndex = Math.floor(Math.random() * files.length)
+        const bgPath = path.join(bgDir, category, files[randomIndex])
 
-        const bgPath = path.join(
-            `${bgDir}`,
-            `${category}`,
-            `${files[randomIndex]}`
-        )
-
-        q.processed = true
-
-        return Promise.all([
-            update(q.id, q),
-            createQuote(bgPath, q, q.id.toString()),
-        ])
-    })
-
-    await Promise.all(promises)
+        const generated = await createQuote(bgPath, q, q.id.toString())
+        if (generated) {
+            q.processed = true
+            await update(q.id, q)
+        }
+    }
 }
 
 async function createQuote(
@@ -90,7 +82,10 @@ async function createQuote(
             ])
             .jpeg()
             .toFile(path.join(outputDir, `${filename}.jpg`))
-    } catch (err) {}
+        return true
+    } catch (err) {
+        return false
+    }
 }
 
 function getSvg(quote: Quote, width: number, height: number) {
@@ -209,32 +204,4 @@ function getPositioning(texts: string[], lineGap?: number): TextPosition[] {
     })
 
     return textPositions
-}
-
-function getXpos(textLength: number) {
-    let x
-
-    if (textLength <= 50) {
-        x = 25
-    } else if (textLength >= 100 && textLength <= 120) {
-        x = 18
-    } else if (textLength >= 130 && textLength <= 140) {
-        x = 22
-    } else {
-        x = 20
-    }
-
-    return x
-}
-
-function getFontSize(text: string) {
-    let fontSize = 45
-    const resizeHeuristic = 0.9
-    const resizeActual = 0.985
-    let l = text.length
-    while (l > 1) {
-        l = l * resizeHeuristic
-        fontSize = fontSize * resizeActual
-    }
-    return fontSize.toFixed(1)
 }

@@ -5,7 +5,7 @@ import config from "../config"
 import { Quote, create, truncate } from "../db/quotes"
 
 const assetsDir = config.dirs.assets
-const excelFile = path.join(assetsDir, "data", "test_quotes.xlsx")
+const excelFile = path.join(assetsDir, "data", "quotes.xlsx")
 const excelSheetName = "Quotes Database"
 
 export async function importQuotes() {
