@@ -5,7 +5,7 @@ import config from "../config"
 import { Quote, create, truncate } from "../db/quotes"
 
 const assetsDir = config.dirs.assets
-const excelFile = path.join(assetsDir, "data", "quotes.xlsx")
+const excelFile = path.join(assetsDir, "data", "test_quotes.xlsx")
 const excelSheetName = "Quotes Database"
 
 export async function importQuotes() {
@@ -28,7 +28,11 @@ function readExcel() {
 
         if (data) {
             quotes = (data as [string: any]).map((d) => {
-                d.quote = d.quote.trim().replace(";", ",").replace("..", ".")
+                d.quote = d.quote
+                    .trim()
+                    .replace(";", ",")
+                    .replace(":", ",")
+                    .replace("..", ".")
                 d.author = d.author.trim()
                 d.category = d.category.trim()
                 d.processed = false
