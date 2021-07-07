@@ -98,9 +98,7 @@ function getSvg(quote: Quote, width: number, height: number) {
     const h = height.toString()
     const fontSize = 45
     const authorFontSize = 38
-
-    // const x = getXpos(quote.quote.length)
-    const x = 25
+    const x = 50
 
     const sentences = getSentences(quote, 20)
     const textPositioning = getPositioning(sentences)
@@ -112,11 +110,11 @@ function getSvg(quote: Quote, width: number, height: number) {
             const { text, position } = textPosition
 
             if (i !== textPositioning.length - 1) {
-                //return `<text x="${x}%" y="${position}%" dy="1em" text-anchor="start">${text}</text>`
-                return `<tspan x="${x}%" y="${position}%" dy="1em" text-anchor="start">${text}</tspan>`
+                //return `<text x="${x}%" y="${position}%" dy="1em" text-anchor="middle">${text}</text>`
+                return `<tspan x="${x}%" y="${position}%" dy="1em" text-anchor="middle">${text}</tspan>`
             } else {
                 //return `<text x="${x}%" y="${position}%" dy="1em" text-anchor="start" class="author">${text}</text>`
-                return `<tspan x="${x}%" y="${position}%" dy="1em" text-anchor="start" class="author">${text}</tspan>`
+                return `<tspan x="${x}%" y="${position}%" dy="1em" text-anchor="middle" class="author">${text}</tspan>`
             }
         })
         .join("")
