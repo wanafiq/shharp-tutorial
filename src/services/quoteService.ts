@@ -97,8 +97,8 @@ function getSvg(quote: Quote, width: number, height: number) {
     const w = width.toString()
     const h = height.toString()
     const x = 20
-    const fontSize = 40
-    const authorFontSize = 25
+    const fontSize = 45
+    const authorFontSize = 38
 
     const sentences = getSentences(quote)
     const textPositioning = getPositioning(sentences)
