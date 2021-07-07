@@ -2,73 +2,81 @@ import fs from "fs"
 import path from "path"
 import sharp from "sharp"
 
-// @ts-ignore
-import quotes from "../../assets/data/quotes.json"
+import config from "../config"
+import { Quote, getAll, update } from "../db/quotes"
 
-export interface Quote {
-    quote: string
-    author: string
-    category: string
-    processed: boolean
-}
+const outputDir = path.join(path.resolve(), "output")
+const assetsDir = config.dirs.assets
+const bgDir = path.join(assetsDir, "backgrounds")
+
+const defaultWidth = 800
+const defaualtHeight = 800
+const maxQuoteLength = 150
 
 interface TextPosition {
     text: string
     position: number
 }
 
-const assetsFolder = path.resolve(__dirname, "../../assets")
-const outputFolder = path.resolve(__dirname, "../../output")
-const bgFolder = path.resolve(assetsFolder, "backgrounds")
-const maxWidth = 700
-const maxHeigt = 700
-const defaultFontSize = 45
-
-let totalGenerated = 0
-
 export async function generateQuotes() {
-    for (let i = 0; i < quotes.length; i++) {
-        const q = quotes[i]
+    const quotes: Quote[] = await getAll()
+    if (quotes.length === 0) {
+        console.log("Quotes table is empty")
+        return
+    }
 
-        if (!q) {
-            continue
-        }
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir)
+    }
 
+    const promises = quotes.map(async (q) => {
         const { quote, category, processed } = q
 
         if (processed) {
-            continue
+            return
         }
 
-        if (quote.length > 100) {
-            continue
+        if (quote.length > maxQuoteLength) {
+            return
         }
 
-        const bg = getRandomBackground(category)
-
-        if (bg) {
-            const bgPath = path.normalize(`${bgFolder}\\${q.category}\\${bg}`)
-            await createQuote(bgPath, q, maxWidth, maxHeigt, `quote${i}`)
-            updateJsonFile(i)
+        const categoryDir = path.join(`${bgDir}`, `${category}`)
+        const files = fs.readdirSync(categoryDir)
+        if (!files || files.length === 0) {
+            return
         }
-    }
 
-    console.log("Total generated: ", totalGenerated)
+        const randomIndex = Math.floor(Math.random() * files.length)
+
+        const bgPath = path.join(
+            `${bgDir}`,
+            `${category}`,
+            `${files[randomIndex]}`
+        )
+
+        q.processed = true
+
+        return Promise.all([
+            update(q.id, q),
+            createQuote(bgPath, q, q.id.toString()),
+        ])
+    })
+
+    await Promise.all(promises)
 }
 
 async function createQuote(
     bgPath: string,
     quote: Quote,
-    width: number,
-    height: number,
-    outputFilename: string
+    filename: string,
+    width?: number,
+    height?: number
 ) {
-    const svg = getSvg(quote, width, height)
-
     try {
-        if (!fs.existsSync(bgPath)) {
-            return
-        }
+        if (!width) width = defaultWidth
+        if (!height) height = defaualtHeight
+
+        const svg = getSvg(quote, width, height)
 
         await sharp(bgPath)
             .resize(width, height, {
@@ -81,91 +89,36 @@ async function createQuote(
                 },
             ])
             .jpeg()
-            .toFile(path.normalize(`${outputFolder}\\${outputFilename}.jpg`))
-
-        totalGenerated++
-    } catch (err) {
-        return
-    }
-}
-
-function getRandomBackground(category: string) {
-    const categoryFolder = path.resolve(bgFolder, category.trim())
-
-    try {
-        const files = fs.readdirSync(categoryFolder, "utf-8")
-        if (!files || files.length === 0) {
-            return undefined
-        }
-
-        const randomIndex = Math.floor(Math.random() * files.length)
-        const bg = files[randomIndex]
-
-        return bg
-    } catch (err) {
-        return undefined
-    }
-}
-
-function getRandomQuote() {
-    if (!quotes) {
-        console.error(`Failed to load quotes`)
-    }
-
-    const randomIndex = Math.floor(Math.random() * quotes.length)
-    const quote = quotes[randomIndex]
-
-    return quote
+            .toFile(path.join(outputDir, `${filename}.jpg`))
+    } catch (err) {}
 }
 
 function getSvg(quote: Quote, width: number, height: number) {
     const w = width.toString()
     const h = height.toString()
+    const x = 20
+    const fontSize = 40
+    const authorFontSize = 25
 
-    const fontSize = getFontSize(quote.quote)
-    const sentences = getSentences(quote.quote.split(" "))
+    const sentences = getSentences(quote)
     const textPositioning = getPositioning(sentences)
-    const lastPosition =
-        textPositioning[textPositioning.length - 1].position + 10
 
     const svg = `
-        <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" text-anchor="middle">
+        <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
 
-            <style type="text/css">
-                svg {
-                    font-family: Arial;
-                    fill: white;
-                    font-weight:"bold";
-                }
-                text {
-                    font-size: ${fontSize};
-                }
-                rect {
-                    fill: black;
-                    opacity: 0.4;
-                }
-
-                .author {
-                    font-size: 26;
-                    fill: white;
-                    font-weight:"bold";
-                }
-            </style>
+            ${getSvgStyle(fontSize, authorFontSize)}
 
             <rect width="100%" height="100%"></rect>
 
-            <text>
-            ${textPositioning.map((textPosition) => {
+            ${textPositioning.map((textPosition, i) => {
                 const { text, position } = textPosition
 
-                text.replace(";", "")
-
-                return `<tspan x="50%" y="${position}%" dy="1em">${text}</tspan>`
+                if (i !== textPositioning.length - 1) {
+                    return `<text x="${x}%" y="${position}%" dy="1em" text-anchor="start">${text}</text>`
+                } else {
+                    return `<text x="${x}%" y="${position}%" dy="1em" text-anchor="start" class="author">${text}</text>`
+                }
             })}
-            <tspan x="50%" y="${lastPosition}%" dy="1em" class="author" text-anchor="end">
-                ${quote.author}
-            </tspan>
-            </text>
 
         </svg>
     `
@@ -173,20 +126,31 @@ function getSvg(quote: Quote, width: number, height: number) {
     return svg
 }
 
-function getFontSize(text: string) {
-    let fontSize = defaultFontSize
-    const resizeHeuristic = 0.9
-    const resizeActual = 0.985
-    let l = text.length
-    while (l > 1) {
-        l = l * resizeHeuristic
-        fontSize = fontSize * resizeActual
+function getSvgStyle(quoteFontSize: number, authorFontSize: number) {
+    return `
+        <style type="text/css">
+            svg {
+                font-family: Arial;
+                fill: white;
+                font-weight:"bold";
+            }
+            text {
+                font-size: ${quoteFontSize};
+            }
+            rect {
+                fill: black;
+                opacity: 0.4;
+            }
 
-        return fontSize.toFixed(1)
-    }
+            .author {
+                font-size: ${authorFontSize - 15};
+            }
+        </style>
+    `
 }
 
-function getSentences(words: string[], maxWidth?: number): string[] {
+function getSentences(quote: Quote, maxWidth?: number): string[] {
+    const words = quote.quote.split(" ")
     const sentences: string[] = []
     const width = maxWidth ? maxWidth : 25
     let currentSentence = ""
@@ -194,9 +158,10 @@ function getSentences(words: string[], maxWidth?: number): string[] {
     words.forEach((word) => {
         // const firstWordChar = word.trim()[0]
         if (
-            currentSentence.length > width ||
-            currentSentence.includes(",") ||
-            currentSentence.includes(".")
+            currentSentence.length > width
+            // ||
+            // currentSentence.includes(",") ||
+            // currentSentence.includes(".")
             // || sentences.length > 0 && (firstWordChar === firstWordChar.toUpperCase())
         ) {
             sentences.push(
@@ -208,6 +173,7 @@ function getSentences(words: string[], maxWidth?: number): string[] {
         }
     })
     currentSentence === "" ? false : sentences.push(currentSentence)
+    sentences.push(quote.author)
     return sentences
 }
 
@@ -236,13 +202,14 @@ function getPositioning(texts: string[], lineGap?: number): TextPosition[] {
     return textPositions
 }
 
-function updateJsonFile(index: number) {
-    const dataFolder = path.resolve(assetsFolder, "data")
-    const quotesPath = path.normalize(`${dataFolder}\\quotes.json`)
-
-    const data: Quote = quotes[index]
-    data.processed = true
-    quotes[index] = data
-
-    fs.writeFileSync(quotesPath, JSON.stringify(quotes))
+function getFontSize(text: string) {
+    let fontSize = 45
+    const resizeHeuristic = 0.9
+    const resizeActual = 0.985
+    let l = text.length
+    while (l > 1) {
+        l = l * resizeHeuristic
+        fontSize = fontSize * resizeActual
+    }
+    return fontSize.toFixed(1)
 }

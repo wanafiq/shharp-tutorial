@@ -1,31 +1,43 @@
 import path from "path"
 import xlsx from "xlsx"
-import fs from "fs"
 
-import { Quote } from "./quoteService"
+import config from "../config"
+import { Quote, create, truncate } from "../db/quotes"
 
-const dataFolder = path.resolve(__dirname, "../../assets/data")
-const excelFile = path.resolve(dataFolder, "rawQuote.xls")
-const quotesFile = path.resolve(dataFolder, "quotes.json")
+const assetsDir = config.dirs.assets
+const excelFile = path.join(assetsDir, "data", "quotes.xlsx")
+const excelSheetName = "Quotes Database"
 
-const workbook = xlsx.readFile(excelFile)
-const sheet = workbook.Sheets["Quotes Database"]
-const data = xlsx.utils.sheet_to_json(sheet)
+export async function importQuotes() {
+    const quotes = readExcel()
 
-processExcel()
+    await truncate()
 
-export function processExcel() {
-    let quotes: Quote[]
-
-    quotes = (data as [string: any]).map((d) => {
-        d.processed = false
-
-        return d
+    quotes.forEach(async (quote) => {
+        await create(quote)
     })
+}
 
-    if (fs.existsSync(quotesFile)) {
-        fs.unlinkSync(quotesFile)
+function readExcel() {
+    let quotes: Quote[] = []
+
+    try {
+        const workbook = xlsx.readFile(excelFile)
+        const sheet = workbook.Sheets[excelSheetName]
+        const data = xlsx.utils.sheet_to_json(sheet)
+
+        if (data) {
+            quotes = (data as [string: any]).map((d) => {
+                d.quote = d.quote.trim().replace(";", ",").replace("..", ".")
+                d.author = d.author.trim()
+                d.category = d.category.trim()
+                d.processed = false
+                return d
+            })
+        }
+    } catch (err) {
+        throw new Error(`Failed to read excel file. ${err}`)
     }
 
-    fs.writeFileSync(quotesFile, JSON.stringify(data))
+    return quotes
 }
