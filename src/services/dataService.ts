@@ -4,9 +4,11 @@ import xlsx from "xlsx"
 import config from "../config"
 import { Quote, create, truncate } from "../db/quotes"
 
-const assetsDir = config.dirs.assets
-const excelFile = path.join(assetsDir, "data", "quotes.xlsx")
+const excelFilname = "test_quotes.xlsx"
+const dataDir = config.dirs.data
+const excelFile = path.join(dataDir, excelFilname)
 const excelSheetName = "Quotes Database"
+const maxQuoteLength = 120
 
 export async function importQuotes() {
     const quotes = readExcel()
@@ -24,20 +26,21 @@ function readExcel() {
     try {
         const workbook = xlsx.readFile(excelFile)
         const sheet = workbook.Sheets[excelSheetName]
-        const data = xlsx.utils.sheet_to_json(sheet)
+        const rows = xlsx.utils.sheet_to_json(sheet)
 
-        if (data) {
-            quotes = (data as [string: any]).map((d) => {
-                d.quote = d.quote
-                    .trim()
-                    .replace(";", ",")
-                    .replace(":", ",")
-                    .replace("..", ".")
-                d.author = d.author.trim()
-                d.category = d.category.trim()
-                d.processed = false
-                return d
-            })
+        if (rows) {
+            for (const row of rows) {
+                const data = row as any
+
+                data.quote = data.quote.trim()
+                data.author = data.author.trim()
+                data.category = data.category.trim()
+                data.processed = false
+
+                if (data.quote.length <= maxQuoteLength) {
+                    quotes.push(data)
+                }
+            }
         }
     } catch (err) {
         throw new Error(`Failed to read excel file. ${err}`)

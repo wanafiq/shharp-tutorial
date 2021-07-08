@@ -120,3 +120,4 @@ dist
 # local assets
 assets
 output
+*.sqlite3

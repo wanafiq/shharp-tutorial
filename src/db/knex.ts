@@ -5,21 +5,9 @@ import path from "path"
 import config from "../config"
 import * as quotes from "./quotes"
 
-const assetsDir = config.dirs.assets
-const dbName = "db.sqlite3"
-const dbPath = path.join(`${assetsDir}`, "data", `${dbName}`)
-const migrationPath = path.join(`${assetsDir}`, "data", `/migrations`)
+export const knexInstance = Knex(config.db.sqlite)
 
-export const knexInstance = Knex({
-    client: "sqlite3",
-    connection: {
-        filename: dbPath,
-    },
-    useNullAsDefault: true,
-    migrations: {
-        directory: migrationPath,
-    },
-})
+const dbPath = config.db.sqlite.connection.filename
 
 export async function runSqliteMigration() {
     await createSqliteDb()
@@ -50,16 +38,17 @@ async function createSqliteDb() {
 }
 
 async function createQuotesTable() {
-    await knexInstance.schema.createTableIfNotExists(
-        quotes.tableName,
-        (table) => {
+    const tableExist = await knexInstance.schema.hasTable(quotes.tableName)
+
+    if (!tableExist) {
+        await knexInstance.schema.createTable(quotes.tableName, (table) => {
             table.bigIncrements("id").unsigned().primary()
             table.text("quote").notNullable()
             table.string("author", 512).notNullable()
             table.string("category", 512).notNullable()
             table.boolean("processed").notNullable()
-        }
-    )
+        })
+    }
 }
 
 export default knexInstance
