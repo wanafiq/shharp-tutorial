@@ -6,9 +6,8 @@ import { nanoid } from "nanoid"
 
 import config from "../config"
 import { Quote, getAll, update } from "../db/quotes"
-import delay from "../utils/delay"
 
-const assetsDir = path.join(config.rootDir, "assets")
+const assetsDir = path.join(config.paths.root, "assets")
 
 // Black Overlay behind texts
 const overlayWidthPercent = 100
@@ -34,11 +33,7 @@ const logoWidth = 200
 const logoHeight = 61
 const logoPadding = 20
 
-export async function generateQuotes(
-    knex: Knex,
-    bgPath: string,
-    outputPath: string
-) {
+export async function generateQuotes(knex: Knex, outputPath: string) {
     const quotes: Quote[] = await getAll(knex)
     if (quotes.length === 0) {
         console.log("Quotes table is empty")
@@ -50,20 +45,25 @@ export async function generateQuotes(
     const svgStyles = getSvgStyles()
 
     for (const quoteObject of quotes) {
-        const { id, category, processed } = quoteObject
+        const { category, processed } = quoteObject
 
         if (processed) {
             continue
         }
 
-        const categoryPath = path.join(bgPath, category)
+        const categoryPath = path.join(config.paths.background, category)
         const files = fs.readdirSync(categoryPath)
         if (!files || files.length === 0) {
             return
         }
 
         const randomIndex = Math.floor(Math.random() * files.length)
-        const bgFilePath = path.join(bgPath, category, files[randomIndex])
+        const bgFilename = files[randomIndex]
+        const bgFilePath = path.join(
+            config.paths.background,
+            category,
+            bgFilename
+        )
         const svgBuffer = getSvg(quoteObject, svgStyles)
         const filename = `${nanoid(10)}.jpeg`
 
@@ -76,7 +76,15 @@ export async function generateQuotes(
 
         if (generated) {
             quoteObject.processed = true
-            quoteObject.filename = filename
+            quoteObject.bgPath = path.normalize(`${category}/${bgFilename}`)
+            quoteObject.generatedName = filename
+            const normalize = path.normalize(
+                "C:/Users/xenom/Desktop/daily-quotes-assets/output/"
+            )
+            quoteObject.generatedPath = `${outputPath.replace(
+                normalize,
+                ""
+            )}\\${filename}`
             await update(knex, quoteObject.id, quoteObject)
         }
     }

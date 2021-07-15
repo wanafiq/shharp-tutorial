@@ -1,27 +1,29 @@
 import { knex, Knex } from "knex"
-import path from "path"
 
-import { createFileIfNotExist } from "../services/fileService"
+import config from "../config"
 
+const dbName = "sqlite3"
 const tableName = "quotes"
 
-export function getKnex(db: any) {
+export function getKnex(path: string) {
     const opt = {
-        client: "sqlite3",
+        client: dbName,
         connection: {
-            filename: path.join(db.dir, db.base),
+            filename: path,
         },
         useNullAsDefault: true,
         migrations: {
-            directory: path.join(db.dir, "migrations"),
+            directory: config.paths.migration,
         },
     }
 
-    return knex(opt)
-}
-
-export function createSqliteDbIfNotExist(dbPath: string) {
-    return createFileIfNotExist(dbPath)
+    try {
+        const instance = knex(opt)
+        return instance
+    } catch (err) {
+        console.error(err)
+    }
+    return undefined
 }
 
 export async function createQuotesTable(knex: Knex) {
@@ -37,7 +39,9 @@ export async function createQuotesTable(knex: Knex) {
                     table.string("author", 512).notNullable()
                     table.string("category", 512).notNullable()
                     table.boolean("processed").defaultTo(false)
-                    table.boolean("filename")
+                    table.string("bgPath")
+                    table.string("generatedName")
+                    table.string("generatedPath")
                     table.boolean("uploaded")
                     table.boolean("uploadedUrl")
                 }

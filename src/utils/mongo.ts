@@ -1,15 +1,20 @@
-import { mongoose } from "@typegoose/typegoose"
+import mongoose, { ConnectOptions } from "mongoose"
 
 const url =
     "mongodb+srv://wan:GvkgdTcDqjicE9qP@worqapp-dev-w6j3k.mongodb.net/worqapp_dev?retryWrites=true&w=majority"
 
-export default async () => {
-    console.log("Connecting to mongodb")
-
-    await mongoose.connect(url, {
-        useNewUrlParser: true,
+export default () => {
+    const opt: ConnectOptions = {
         useUnifiedTopology: true,
-    })
+        useNewUrlParser: true,
+    }
 
-    console.log("Connected")
+    mongoose
+        .connect(url, opt)
+        .then((res) => {
+            console.log("Connected to mongodb")
+        })
+        .catch((err) => {
+            throw new Error(`Failed connect to mongodb. ${err}`)
+        })
 }

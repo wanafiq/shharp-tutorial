@@ -5,9 +5,11 @@ export interface Quote {
     author: string
     category: string
     processed: boolean
-    filename: string
-    uploaded: boolean
-    uploadedUrl: string
+    bgPath?: string
+    generatedName?: string
+    generatedPath?: string
+    uploaded?: boolean
+    uploadedUrl?: string
 }
 
 export const tableName = "quotes"

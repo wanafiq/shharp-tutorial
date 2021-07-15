@@ -2,7 +2,8 @@ import { Knex } from "knex"
 import fetch, { Headers } from "node-fetch"
 
 import { Quote, getAll } from "../db/quotes"
-import { DailyQuote, DailyQuoteModel } from "../models/DailyQuote"
+import QuoteModel from "../models/Quote"
+import { update } from "../db/quotes"
 import delay from "../utils/delay"
 
 const baseUrl = "https://dev-synapse.api.worqapp.com"
@@ -16,25 +17,34 @@ export async function uploadQuotes(knex: Knex) {
         return
     }
 
-    const quote: Omit<DailyQuote, "_id" | "__v" | "__t"> = {
-        url: "mxc://example.com/AQwafuaFswefuhsfAFAgsw",
-        quote: "Do not wait for extraordinary circumstances to do good action; try to use ordinary situations.",
-        author: "Richter, Jean Paul",
-        category: "action",
-        bgPath: "/background/action/6CJax9RrU7.jpeg",
-        generatedPath: "/generated/j6soqjuODD.jpeg",
-        createdAt: new Date(),
+    for (let i = 0; i < quotes.length; i++) {
+        const quote = quotes[i]
+
+        if (quote.uploaded) {
+            continue
+        }
+
+        if (quote.generatedName) {
+            const url = await upload(quote.generatedName)
+            if (url) {
+                const doc = await QuoteModel.create({
+                    url,
+                    quote: quote.quote,
+                    author: quote.author,
+                    category: quote.category,
+                    bgPath: quote.bgPath,
+                    generatedPath: quote.generatedPath,
+                    createdAt: new Date(),
+                })
+
+                if (doc) {
+                    quote.uploaded = true
+                    quote.uploadedUrl = doc.url
+                    await update(knex, quote.id, quote)
+                }
+            }
+        }
     }
-
-    const saved = await DailyQuoteModel.create(quote)
-    console.log("saved ", saved)
-
-    quotes.map(async (quote) => {
-        // const url = await upload(quote.filename)
-        // if (url) {
-        //     // update database
-        // }
-    })
 }
 
 async function upload(filename: string) {

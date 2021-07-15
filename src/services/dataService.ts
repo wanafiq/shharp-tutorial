@@ -1,13 +1,14 @@
 import path from "path"
 import xlsx from "xlsx"
+import { Knex } from "knex"
 
+import config from "../config"
 import { Quote, create } from "../db/quotes"
 
 const maxQuoteLength = 120
 
-export async function importQuotes(knex: any, file: any) {
-    const filePath = path.join(file.dir, file.base)
-    const quotes = readExcel(filePath)
+export async function importQuotes(knex: Knex, filename: string) {
+    const quotes = readExcel(filename)
 
     if (quotes.length > 0) {
         console.log("Saving quotes into sqlite db")
@@ -18,10 +19,11 @@ export async function importQuotes(knex: any, file: any) {
     }
 }
 
-function readExcel(filePath: string) {
+function readExcel(filename: string) {
     let quotes: Quote[] = []
 
     try {
+        const filePath = path.join(config.paths.excel, `${filename}.xlsx`)
         const workbook = xlsx.readFile(filePath)
         const sheetName = workbook.SheetNames[0]
         const sheet = workbook.Sheets[sheetName]

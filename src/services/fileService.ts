@@ -1,38 +1,33 @@
 import fs from "fs"
 import Path from "path"
 
-export function folderExist(folderPath: string) {
-    return fs.existsSync(folderPath)
+export function getFolder(path: string) {
+    if (fs.existsSync(path)) {
+        return path
+    }
+    return ""
 }
 
-export function createFolderIfNotExist(folderPath: string) {
+export function createFolder(path: string) {
     try {
-        if (!folderExist(folderPath)) {
-            fs.mkdirSync(folderPath)
-        }
+        fs.mkdirSync(path)
+        return path
     } catch (err) {
-        return undefined
+        console.error(err)
     }
-
-    return Path.parse(folderPath)
+    return ""
 }
 
-export function fileExist(filePath: string) {
-    return fs.existsSync(filePath)
+export function getFile(path: string) {
+    if (fs.existsSync(path)) {
+        return path
+    }
+    return ""
 }
 
-export function createFileIfNotExist(filePath: string) {
-    if (!fileExist(filePath)) {
-        fs.writeFile(filePath, "", async (err) => {
-            if (err) {
-                throw new Error(
-                    `Failed to create sqlite at ${filePath}. ${err}`
-                )
-            }
-
-            console.log(`sqlite db created`)
-        })
-    }
-
-    return Path.parse(filePath)
+export function createFile(path: string) {
+    fs.writeFile(path, "", async (_err) => {
+        console.log(`sqlite db created`)
+        return path
+    })
 }
