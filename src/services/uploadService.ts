@@ -1,5 +1,7 @@
 import { Knex } from "knex"
 import fetch, { Headers } from "node-fetch"
+import fs, { createReadStream } from "fs"
+import Mime from "mime"
 
 import { Quote, getAll } from "../db/quotes"
 import QuoteModel from "../models/Quote"
@@ -24,8 +26,8 @@ export async function uploadQuotes(knex: Knex) {
             continue
         }
 
-        if (quote.generatedName) {
-            const url = await upload(quote.generatedName)
+        if (quote.generatedName && quote.generatedPath) {
+            const url = await upload(quote.generatedName, quote.generatedPath)
             if (url) {
                 const doc = await QuoteModel.create({
                     url,
@@ -47,8 +49,13 @@ export async function uploadQuotes(knex: Knex) {
     }
 }
 
-async function upload(filename: string) {
+async function upload(filename: string, filePath: string) {
     let sent = false
+
+    const stats = fs.statSync(filePath)
+    const size = stats["size"].toString()
+    const type = Mime.getType(filename)
+    const stream = createReadStream(filePath)
 
     while (!sent) {
         try {
@@ -57,9 +64,11 @@ async function upload(filename: string) {
                 {
                     method: "POST",
                     headers: new Headers({
-                        "Content-Type": "image/jpeg",
+                        "Content-Length": size,
+                        "Content-Type": type ? type : "image/jpeg",
                         Authorization: `Bearer ${accessToken}`,
                     }),
+                    body: stream,
                 }
             )
 

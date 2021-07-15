@@ -1,17 +1,22 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es2019",
         "module": "commonjs",
-        "lib": ["ES2015"],
+        "lib": ["es2019"],
         "sourceMap": true,
-        "rootDir": "./src",
-        "outDir": "./dist",
+        "isolatedModules": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "allowJs": true,
+        "skipLibCheck": true,
+
         "strict": true,
         "moduleResolution": "node",
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true,
-        "experimentalDecorators": true
+        "resolveJsonModule": true
     }
 }

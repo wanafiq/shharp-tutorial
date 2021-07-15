@@ -11,6 +11,8 @@
         "dev": "yarn clean && yarn format && yarn build && yarn start"
     },
     "devDependencies": {
+        "@types/matrix-js-sdk": "^11.0.1",
+        "@types/mime": "^2.0.3",
         "@types/node-fetch": "^2.5.11",
         "@types/sharp": "^0.28.3",
         "prettier": "^2.3.2",
@@ -20,6 +22,8 @@
     "dependencies": {
         "dotenv": "^10.0.0",
         "knex": "^0.95.6",
+        "matrix-js-sdk": "^12.0.1",
+        "mime": "^2.5.2",
         "mongoose": "^5.13.2",
         "nanoid": "^3.1.23",
         "node-fetch": "^2.6.1",

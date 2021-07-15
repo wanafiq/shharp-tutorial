@@ -76,15 +76,9 @@ export async function generateQuotes(knex: Knex, outputPath: string) {
 
         if (generated) {
             quoteObject.processed = true
-            quoteObject.bgPath = path.normalize(`${category}/${bgFilename}`)
+            quoteObject.bgPath = bgFilePath
             quoteObject.generatedName = filename
-            const normalize = path.normalize(
-                "C:/Users/xenom/Desktop/daily-quotes-assets/output/"
-            )
-            quoteObject.generatedPath = `${outputPath.replace(
-                normalize,
-                ""
-            )}\\${filename}`
+            quoteObject.generatedPath = path.join(outputPath, filename)
             await update(knex, quoteObject.id, quoteObject)
         }
     }

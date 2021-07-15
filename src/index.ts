@@ -17,8 +17,8 @@ import { generateQuotes } from "./services/quoteService"
 import { uploadQuotes } from "./services/uploadService"
 import connectToMongo from "./utils/mongo"
 
-// yarn dev generate-quotes 'quotes_reviewed 1.xlsx'
-// yarn dev upload-quotes 'quotes_reviewed 1.xlsx'
+// yarn dev generate-quotes 'quotes_reviewed 1'
+// yarn dev upload-quotes 'quotes_reviewed 1'
 enum ProcessType {
     GenerateQuotes = "generate-quotes",
     UploadQuotes = "upload-quotes",
