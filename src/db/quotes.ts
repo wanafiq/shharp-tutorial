@@ -1,35 +1,37 @@
-import knex from "./knex"
-
+import { Knex } from "knex"
 export interface Quote {
     id: number
     quote: string
     author: string
     category: string
     processed: boolean
+    filename: string
+    uploaded: boolean
+    uploadedUrl: string
 }
 
 export const tableName = "quotes"
 
-export function create(quote: Quote) {
+export function create(knex: Knex, quote: Quote) {
     return knex(tableName).insert(quote)
 }
 
-export function getAll() {
+export function getAll(knex: Knex) {
     return knex(tableName).select("*")
 }
 
-export function get(id: number) {
+export function get(knex: Knex, id: number) {
     return knex(tableName).where("id", id).select()
 }
 
-export async function update(id: number, quote: Quote) {
+export function update(knex: Knex, id: number, quote: Quote) {
     return knex(tableName).where("id", id).update(quote)
 }
 
-export function remove(id: number) {
+export function remove(knex: Knex, id: number) {
     return knex(tableName).where("id", id).del()
 }
 
-export function truncate() {
+export function truncate(knex: Knex) {
     return knex(tableName).truncate()
 }

@@ -11,13 +11,18 @@
         "dev": "yarn clean && yarn format && yarn build && yarn start"
     },
     "devDependencies": {
+        "@types/node-fetch": "^2.5.11",
         "@types/sharp": "^0.28.3",
         "prettier": "^2.3.2",
         "tslint": "^6.1.3",
         "typescript": "^4.3.5"
     },
     "dependencies": {
+        "@typegoose/typegoose": "^6.2.0",
         "knex": "^0.95.6",
+        "mongoose": "^5.11.17",
+        "nanoid": "^3.1.23",
+        "node-fetch": "^2.6.1",
         "rimraf": "^3.0.2",
         "sharp": "^0.28.3",
         "sqlite3": "^5.0.2",

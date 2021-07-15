@@ -1,54 +1,51 @@
-import Knex from "knex"
-import fs from "fs"
+import { knex, Knex } from "knex"
 import path from "path"
 
-import config from "../config"
-import * as quotes from "./quotes"
+import { createFileIfNotExist } from "../services/fileService"
 
-export const knexInstance = Knex(config.db.sqlite)
+const tableName = "quotes"
 
-const dbPath = config.db.sqlite.connection.filename
+export function getKnex(db: any) {
+    const opt = {
+        client: "sqlite3",
+        connection: {
+            filename: path.join(db.dir, db.base),
+        },
+        useNullAsDefault: true,
+        migrations: {
+            directory: path.join(db.dir, "migrations"),
+        },
+    }
 
-export async function runSqliteMigration() {
-    await createSqliteDb()
+    return knex(opt)
 }
 
-export function isSqliteDbExist() {
+export function createSqliteDbIfNotExist(dbPath: string) {
+    return createFileIfNotExist(dbPath)
+}
+
+export async function createQuotesTable(knex: Knex) {
     try {
-        if (fs.existsSync(dbPath)) {
-            return true
+        const tableExist = await knex.schema.hasTable(tableName)
+
+        if (!tableExist) {
+            await knex.schema.createTable(
+                tableName,
+                (table: Knex.CreateTableBuilder) => {
+                    table.bigIncrements("id").unsigned().primary()
+                    table.text("quote").notNullable()
+                    table.string("author", 512).notNullable()
+                    table.string("category", 512).notNullable()
+                    table.boolean("processed").defaultTo(false)
+                    table.boolean("filename")
+                    table.boolean("uploaded")
+                    table.boolean("uploadedUrl")
+                }
+            )
+
+            console.log("quotes table created")
         }
     } catch (err) {
-        return false
-    }
-
-    return false
-}
-
-async function createSqliteDb() {
-    fs.writeFile(dbPath, "", (err) => {
-        if (err) {
-            throw new Error(`Failed to create sqlite at ${dbPath}. ${err}`)
-        }
-
-        console.log(`sqlite db created`)
-    })
-
-    await createQuotesTable()
-}
-
-async function createQuotesTable() {
-    const tableExist = await knexInstance.schema.hasTable(quotes.tableName)
-
-    if (!tableExist) {
-        await knexInstance.schema.createTable(quotes.tableName, (table) => {
-            table.bigIncrements("id").unsigned().primary()
-            table.text("quote").notNullable()
-            table.string("author", 512).notNullable()
-            table.string("category", 512).notNullable()
-            table.boolean("processed").notNullable()
-        })
+        console.error(err)
     }
 }
-
-export default knexInstance
