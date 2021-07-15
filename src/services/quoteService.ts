@@ -1,13 +1,13 @@
 import fs from "fs"
 import path from "path"
+import { Knex } from "knex"
 import sharp from "sharp"
+import { nanoid } from "nanoid"
 
 import config from "../config"
 import { Quote, getAll, update } from "../db/quotes"
 
-const outputDir = path.join(path.resolve(), "output")
-const assetsDir = config.dirs.assets
-const bgDir = path.join(assetsDir, "backgrounds")
+const assetsDir = path.join(config.paths.root, "assets")
 
 // Black Overlay behind texts
 const overlayWidthPercent = 100
@@ -33,20 +33,15 @@ const logoWidth = 200
 const logoHeight = 61
 const logoPadding = 20
 
-export async function generateQuotes() {
-    const quotes: Quote[] = await getAll()
+export async function generateQuotes(knex: Knex, outputPath: string) {
+    const quotes: Quote[] = await getAll(knex)
     if (quotes.length === 0) {
         console.log("Quotes table is empty")
         return
     }
 
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir)
-    }
-
     const logoPath = path.join(assetsDir, logoName)
     const logoBuffer = await getLogo(logoWidth, logoHeight, logoPath)
-
     const svgStyles = getSvgStyles()
 
     for (const quoteObject of quotes) {
@@ -56,28 +51,35 @@ export async function generateQuotes() {
             continue
         }
 
-        const categoryDir = path.join(bgDir, category)
-        const files = fs.readdirSync(categoryDir)
+        const categoryPath = path.join(config.paths.background, category)
+        const files = fs.readdirSync(categoryPath)
         if (!files || files.length === 0) {
-            continue
+            return
         }
 
         const randomIndex = Math.floor(Math.random() * files.length)
-        const bgPath = path.join(bgDir, category, files[randomIndex])
+        const bgFilename = files[randomIndex]
+        const bgFilePath = path.join(
+            config.paths.background,
+            category,
+            bgFilename
+        )
         const svgBuffer = getSvg(quoteObject, svgStyles)
-        const filename = `${quoteObject.id.toString()}.jpg`
-        const outputPath = path.join(outputDir, filename)
+        const filename = `${nanoid(10)}.jpeg`
 
         const generated = await createQuote(
-            bgPath,
+            bgFilePath,
             logoBuffer,
             svgBuffer,
-            outputPath
+            path.join(outputPath, filename)
         )
 
         if (generated) {
             quoteObject.processed = true
-            await update(quoteObject.id, quoteObject)
+            quoteObject.bgPath = bgFilePath
+            quoteObject.generatedName = filename
+            quoteObject.generatedPath = path.join(outputPath, filename)
+            await update(knex, quoteObject.id, quoteObject)
         }
     }
 }
@@ -203,13 +205,13 @@ function getDynamicYPositions(texts: string[], lineGap?: number) {
 }
 
 async function createQuote(
-    bgPath: string,
+    bgFilePath: string,
     logoBuffger: Buffer,
     svgBuffer: Buffer,
     outputPath: string
 ) {
     try {
-        await sharp(bgPath)
+        await sharp(bgFilePath)
             .resize(width, height, {
                 fit: "contain",
             })
@@ -228,8 +230,10 @@ async function createQuote(
             ])
             .jpeg()
             .toFile(outputPath)
+
         return true
     } catch (err) {
+        console.error(`Failed to generate quote. ${err}`)
         return false
     }
 }

@@ -1,31 +1,38 @@
 import path from "path"
 
-const rootDir = path.resolve()
-const distDir = path.join(rootDir, "dist")
-const assetsDir = path.join(path.resolve(), "assets")
-const dataDir = path.join(path.resolve(), "data")
+if (!process.env.EXCEL_FOLDER_PATH) {
+    throw new Error("Missing EXCEL_FOLDER_PATH")
+}
+if (!process.env.BACKGROUND_FOLDER_PATH) {
+    throw new Error("Missing BACKGROUND_FOLDER_PATH")
+}
+if (!process.env.OUTPUT_FOLDER_PATH) {
+    throw new Error("Missing OUTPUT_FOLDER_PATH")
+}
+if (!process.env.GENERATED_QUOTE_PATH) {
+    throw new Error("Missing GENERATED_QUOTE_PATH")
+}
+if (!process.env.SQLITE_DB_PATH) {
+    throw new Error("Missing SQLITE_DB_PATH")
+}
+if (!process.env.SQLITE_MIGRATION_PATH) {
+    throw new Error("Missing SQLITE_MIGRATION_PATH")
+}
 
-const dbName = "db.sqlite3"
-const dbPath = path.join(dataDir, dbName)
-const migrationPath = path.join(dataDir, "/migrations")
+const excel = process.env.EXCEL_FOLDER_PATH
+const background = process.env.BACKGROUND_FOLDER_PATH
+const output = process.env.OUTPUT_FOLDER_PATH
+const generatedQuote = process.env.GENERATED_QUOTE_PATH
+const migration = process.env.SQLITE_MIGRATION_PATH
 
 const config = {
-    dirs: {
-        root: distDir,
-        assets: assetsDir,
-        data: dataDir,
-    },
-    db: {
-        sqlite: {
-            client: "sqlite3",
-            connection: {
-                filename: dbPath,
-            },
-            useNullAsDefault: true,
-            migrations: {
-                directory: migrationPath,
-            },
-        },
+    paths: {
+        root: path.resolve(),
+        excel,
+        background,
+        output,
+        generatedQuote,
+        migration,
     },
 }
 
