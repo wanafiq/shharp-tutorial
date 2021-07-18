@@ -2,6 +2,7 @@ import { Knex } from "knex"
 import fetch, { Headers } from "node-fetch"
 import fs, { createReadStream } from "fs"
 import Mime from "mime"
+import path from "path"
 
 import { Quote, getAll } from "../db/quotes"
 import QuoteModel from "../models/Quote"
@@ -34,8 +35,10 @@ export async function uploadQuotes(knex: Knex) {
                     quote: quote.quote,
                     author: quote.author,
                     category: quote.category,
-                    bgPath: quote.bgPath,
-                    generatedPath: quote.generatedPath,
+                    bgPath: getBgRelativePath(quote.bgPath, quote.category),
+                    generatedPath: getGeneratedQuoteRelativePath(
+                        quote.generatedPath
+                    ),
                     createdAt: new Date(),
                 })
 
@@ -100,4 +103,24 @@ async function upload(filename: string, filePath: string) {
             }
         }
     }
+}
+
+function getBgRelativePath(bgFilePath: string | undefined, category: string) {
+    const bgFolder = "background"
+
+    if (!bgFilePath) return ""
+
+    const filename = path.basename(bgFilePath)
+
+    return `${bgFolder}/${category}/${filename}`
+}
+
+function getGeneratedQuoteRelativePath(generatedPath: string | undefined) {
+    if (!generatedPath) return ""
+
+    const parsed = path.parse(generatedPath)
+    const split = parsed.dir.split("\\")
+    const filename = parsed.base
+
+    return `${split[6]}/${split[7]}/${filename}`
 }
