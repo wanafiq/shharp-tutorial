@@ -34,7 +34,14 @@ function readExcel(filename: string) {
                 const data = row as any
 
                 data.quote = data.quote.trim()
-                data.author = data.author.trim()
+
+                if (data.author) {
+                    data.author = data.author.replace("?", "")
+                    data.author = data.author.trim()
+                } else {
+                    data.author = "Unknown"
+                }
+
                 data.category = data.category.trim()
 
                 if (data.quote.length <= maxQuoteLength) {
